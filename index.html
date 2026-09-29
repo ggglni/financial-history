@@ -31,6 +31,14 @@ li{display:grid;grid-template-columns:3.25rem 1fr;border-bottom:1px solid var(--
 .title{font-style:italic;display:block}
 .author{display:block;color:var(--muted);font-size:.95rem}
 .tag{display:block;margin-top:.15rem;font-family:var(--sans);font-size:.78rem;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 2.5rem;padding:0;list-style:none;border:0}
+.filters button{font-family:var(--sans);font-size:.8rem;line-height:1;padding:.5rem .75rem;border:1px solid var(--rule);border-radius:999px;background:transparent;color:var(--ink);cursor:pointer}
+.filters button:hover{border-color:var(--muted)}
+.filters button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.filters button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.filters .count{color:var(--muted);margin-left:.3rem;font-variant-numeric:tabular-nums}
+.filters button[aria-pressed="true"] .count{color:inherit;opacity:.7}
+[hidden]{display:none!important}
 @media (max-width:30rem){
   main{padding-top:2rem}
   li{grid-template-columns:2.25rem 1fr}
@@ -42,6 +50,7 @@ li{display:grid;grid-template-columns:3.25rem 1fr;border-bottom:1px solid var(--
 <main>
   <h1>Financial history</h1>
   <p class="lede">A self-directed canon of 57 books, in reading order, with two references to keep at hand throughout.</p>
+  <nav class="filters" id="filters" aria-label="Filter by category"></nav>
     <section class="group">
       <h2>Block 1: Sanctions and Venetian banking</h2>
       <ol>
@@ -137,5 +146,43 @@ li{display:grid;grid-template-columns:3.25rem 1fr;border-bottom:1px solid var(--
       </ol>
     </section>
 </main>
+<script>
+(function(){
+  var nav=document.getElementById('filters');
+  var items=[].slice.call(document.querySelectorAll('.group li'));
+  var groups=[].slice.call(document.querySelectorAll('.group'));
+  var slug=function(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')};
+  var counts={};
+  items.forEach(function(li){
+    var cat=li.querySelector('.tag').textContent.trim();
+    li.dataset.cat=slug(cat);
+    counts[cat]=(counts[cat]||0)+1;
+  });
+  var cats=Object.keys(counts).sort();
+  var buttons=[];
+  function add(label,key,n){
+    var b=document.createElement('button');
+    b.type='button'; b.dataset.cat=key;
+    b.innerHTML=label+'<span class="count">'+n+'</span>';
+    b.addEventListener('click',function(){
+      // Clicking the active category again goes back to showing everything
+      apply(key===current?'':key);
+      history.replaceState(null,'',current?'#'+current:location.pathname);
+    });
+    nav.appendChild(b); buttons.push(b);
+  }
+  add('All','',items.length);
+  cats.forEach(function(c){add(c,slug(c),counts[c])});
+  var current='';
+  function apply(key){
+    current=key;
+    buttons.forEach(function(b){b.setAttribute('aria-pressed',b.dataset.cat===key)});
+    items.forEach(function(li){li.hidden=!!key&&li.dataset.cat!==key});
+    groups.forEach(function(g){g.hidden=!g.querySelector('li:not([hidden])')});
+  }
+  var start=location.hash.slice(1);
+  apply(cats.some(function(c){return slug(c)===start})?start:'');
+})();
+</script>
 </body>
 </html>
